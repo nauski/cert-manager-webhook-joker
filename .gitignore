@@ -28,7 +28,7 @@ go.work
 Thumbs.db
 
 # Build artifacts
-webhook
+/webhook
 dist/
 *.tar.gz
 

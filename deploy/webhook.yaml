@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cert-manager-webhook-joker
+  namespace: cert-manager
+  labels:
+    app: cert-manager-webhook-joker
+spec:
+  selector:
+    matchLabels:
+      app: cert-manager-webhook-joker
+  template:
+    metadata:
+      labels:
+        app: cert-manager-webhook-joker
+    spec:
+      serviceAccountName: cert-manager-webhook-joker
+      containers:
+        - name: cert-manager-webhook-joker
+          image: cert-manager-webhook-joker:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - --tls-cert-file=/tls/tls.crt
+            - --tls-private-key-file=/tls/tls.key
+            - --v=4
+          env:
+            - name: GROUP_NAME
+              value: "acme.joker.com"
+          ports:
+            - name: https
+              containerPort: 8443
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /healthz
+              port: https
+          readinessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /healthz
+              port: https
+          volumeMounts:
+            - name: certs
+              mountPath: /tls
+              readOnly: true
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 10m
+              memory: 64Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            readOnlyRootFilesystem: true
+      volumes:
+        - name: certs
+          secret:
+            secretName: cert-manager-webhook-joker-webhook-tls

@@ -1,0 +1,16 @@
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1alpha1.acme.joker.com
+  labels:
+    app: cert-manager-webhook-joker
+  annotations:
+    cert-manager.io/inject-ca-from: cert-manager/cert-manager-webhook-joker-webhook-tls
+spec:
+  group: acme.joker.com
+  groupPriorityMinimum: 1000
+  versionPriority: 15
+  service:
+    name: cert-manager-webhook-joker
+    namespace: cert-manager
+  version: v1alpha1
