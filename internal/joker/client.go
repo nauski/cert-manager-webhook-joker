@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -52,6 +54,8 @@ func (c *client) updateRecord(ctx context.Context, zone, label, recordType, valu
 		data.Set("value", value)
 	}
 
+	klog.V(6).Infof("Joker API request: %s", data.Encode())
+
 	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, strings.NewReader(data.Encode()))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -75,10 +79,14 @@ func (c *client) updateRecord(ctx context.Context, zone, label, recordType, valu
 	}
 
 	responseText := strings.TrimSpace(string(body))
+	klog.V(6).Infof("Joker API response: %s", responseText)
+
 	if responseText != "OK" {
-		return fmt.Errorf("unexpected API response: %s", responseText)
+		klog.Errorf("Joker API returned error: %s", responseText)
+		return fmt.Errorf("Joker API error: %s", responseText)
 	}
 
+	klog.V(4).Info("Joker API request successful")
 	return nil
 }
 
