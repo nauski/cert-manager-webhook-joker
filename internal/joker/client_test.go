@@ -27,7 +27,6 @@ func TestClient_CreateTXTRecord_Parameters(t *testing.T) {
 			"label":    "_acme-challenge.int",
 			"type":     "TXT",
 			"value":    "test-challenge-token",
-			"verbose":  "true",
 		}
 
 		for key, expected := range expectedValues {
@@ -80,8 +79,7 @@ func TestClient_DeleteTXTRecord_Parameters(t *testing.T) {
 			"zone":     "nauski.fi",
 			"label":    "_acme-challenge.int",
 			"type":     "TXT",
-			"clear":    "true",
-			"verbose":  "true",
+			"value":    "",
 		}
 
 		for key, expected := range expectedValues {

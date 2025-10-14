@@ -45,10 +45,9 @@ func (c *client) updateRecord(ctx context.Context, zone, label, recordType, valu
 	data.Set("zone", zone)
 	data.Set("label", label)
 	data.Set("type", recordType)
-	data.Set("verbose", "true")
 
 	if clear {
-		data.Set("clear", "true")
+		data.Set("value", "")
 	} else {
 		data.Set("value", value)
 	}
