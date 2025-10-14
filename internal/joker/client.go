@@ -81,7 +81,7 @@ func (c *client) updateRecord(ctx context.Context, zone, label, recordType, valu
 	responseText := strings.TrimSpace(string(body))
 	klog.V(6).Infof("Joker API response: %s", responseText)
 
-	if responseText != "OK" {
+	if !strings.HasPrefix(responseText, "OK") {
 		klog.Errorf("Joker API returned error: %s", responseText)
 		return fmt.Errorf("Joker API error: %s", responseText)
 	}
