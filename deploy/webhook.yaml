@@ -22,7 +22,7 @@ spec:
           args:
             - --tls-cert-file=/tls/tls.crt
             - --tls-private-key-file=/tls/tls.key
-            - --port=8443
+            - --secure-port=8443
             - --v=4
           env:
             - name: GROUP_NAME

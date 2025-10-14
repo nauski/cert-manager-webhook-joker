@@ -16,6 +16,10 @@ type Config struct {
 }
 
 type SecretKeySelector struct {
+	SecretKeyRef *SecretReference `json:"secretKeyRef"`
+}
+
+type SecretReference struct {
 	Name string `json:"name"`
 	Key  string `json:"key"`
 }
@@ -34,15 +38,15 @@ func loadConfig(cfgJSON *extapi.JSON) (*Config, error) {
 }
 
 func (c *Config) loadCredentials(ctx context.Context, client kubernetes.Interface, namespace string) (username, password string, err error) {
-	if c.Username != nil {
-		username, err = getSecretValue(ctx, client, namespace, c.Username.Name, c.Username.Key)
+	if c.Username != nil && c.Username.SecretKeyRef != nil {
+		username, err = getSecretValue(ctx, client, namespace, c.Username.SecretKeyRef.Name, c.Username.SecretKeyRef.Key)
 		if err != nil {
 			return "", "", fmt.Errorf("failed to get username from secret: %w", err)
 		}
 	}
 
-	if c.Password != nil {
-		password, err = getSecretValue(ctx, client, namespace, c.Password.Name, c.Password.Key)
+	if c.Password != nil && c.Password.SecretKeyRef != nil {
+		password, err = getSecretValue(ctx, client, namespace, c.Password.SecretKeyRef.Name, c.Password.SecretKeyRef.Key)
 		if err != nil {
 			return "", "", fmt.Errorf("failed to get password from secret: %w", err)
 		}
