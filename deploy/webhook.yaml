@@ -17,11 +17,12 @@ spec:
       serviceAccountName: cert-manager-webhook-joker
       containers:
         - name: cert-manager-webhook-joker
-          image: cert-manager-webhook-joker:latest
+          image: ghcr.io/nauski/cert-manager-webhook-joker:v1.0.0
           imagePullPolicy: IfNotPresent
           args:
             - --tls-cert-file=/tls/tls.crt
             - --tls-private-key-file=/tls/tls.key
+            - --port=8443
             - --v=4
           env:
             - name: GROUP_NAME
