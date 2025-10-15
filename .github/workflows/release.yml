@@ -57,6 +57,9 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Make image name lowercase
+      run: echo "IMAGE_NAME_LOWER=$(echo ${{ env.IMAGE_NAME }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
     - name: Extract version
       id: version
       run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
@@ -84,8 +87,8 @@ jobs:
         platforms: linux/amd64,linux/arm64
         push: true
         tags: |
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:${{ steps.version.outputs.VERSION }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest
         labels: |
           org.opencontainers.image.title=cert-manager-webhook-joker
           org.opencontainers.image.description=cert-manager webhook for Joker.com DNS
