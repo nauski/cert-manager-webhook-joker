@@ -2,25 +2,23 @@ run:
   timeout: 5m
   issues-exit-code: 1
   tests: true
-  skip-dirs:
-    - vendor
   modules-download-mode: readonly
 
 output:
-  format: colored-line-number
-  print-issued-lines: true
-  print-linter-name: true
+  formats:
+    - format: github-actions
+
+issues:
+  exclude-dirs:
+    - vendor
   uniq-by-line: true
 
 linters-settings:
   govet:
-    check-shadowing: true
-  golint:
-    min-confidence: 0
+    enable:
+      - shadow
   gocyclo:
     min-complexity: 15
-  maligned:
-    suggest-new: true
   dupl:
     threshold: 100
   goconst:
@@ -40,7 +38,7 @@ linters-settings:
       - performance
       - style
     disabled-checks:
-      - dupImport # https://github.com/go-critic/go-critic/issues/845
+      - dupImport
       - ifElseChain
       - octalLiteral
       - whyNoLint
@@ -53,7 +51,6 @@ linters:
   disable-all: true
   enable:
     - bodyclose
-    - deadcode
     - depguard
     - dogsled
     - dupl
@@ -65,44 +62,46 @@ linters:
     - gocyclo
     - gofmt
     - goimports
-    - golint
-    - gomnd
+    - mnd          # renamed from gomnd
     - goprintffuncname
     - gosec
     - gosimple
     - govet
     - ineffassign
-    - interfacer
     - lll
     - misspell
     - nakedret
     - rowserrcheck
-    - scopelint
     - staticcheck
-    - structcheck
     - stylecheck
     - typecheck
     - unconvert
     - unparam
-    - unused
-    - varcheck
+    - unused       # replaces deadcode, structcheck, varcheck
     - whitespace
+    - revive       # replaces golint
+    - exportloopref # replaces scopelint
 
 issues:
   exclude-rules:
     - path: _test\.go
       linters:
-        - gomnd
+        - mnd
         - funlen
         - goconst
     - path: test/
       linters:
-        - gomnd
+        - mnd
         - funlen
         - goconst
     - linters:
         - lll
       source: "^//go:generate "
+    # Exclude conformance test package issues since it imports cert-manager test code
+    - path: test/conformance/
+      linters:
+        - typecheck
+        - unused
 
   exclude:
     # gosec: Duplicated errcheck checks
@@ -111,8 +110,6 @@ issues:
     - G103
     # gosec: Too many false-positives for parametrized shell calls
     - G204
-    # gosec: Duplicated errcheck checks
-    - G104
     # gosec: Too many false-positives with os.Create*
     - G301
     # gosec: Too many false-positives with os.OpenFile
