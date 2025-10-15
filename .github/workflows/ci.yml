@@ -10,7 +10,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository_owner }}/cert-manager-webhook-joker
 
 jobs:
   test:
@@ -112,6 +112,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
