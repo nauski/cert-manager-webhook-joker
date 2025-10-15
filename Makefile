@@ -4,7 +4,7 @@ GO_VERSION := 1.21
 IMAGE_NAME := cert-manager-webhook-joker
 IMAGE_TAG := latest
 REGISTRY := ghcr.io/nauski
-VERSION := v1.0.0
+VERSION := v1.0.1
 
 build:
 	go build -o webhook ./cmd/webhook
