@@ -1,0 +1,135 @@
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+  skip-dirs:
+    - vendor
+  modules-download-mode: readonly
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+  uniq-by-line: true
+
+linters-settings:
+  govet:
+    check-shadowing: true
+  golint:
+    min-confidence: 0
+  gocyclo:
+    min-complexity: 15
+  maligned:
+    suggest-new: true
+  dupl:
+    threshold: 100
+  goconst:
+    min-len: 2
+    min-occurrences: 2
+  misspell:
+    locale: US
+  lll:
+    line-length: 140
+  goimports:
+    local-prefixes: github.com/nauski/cert-manager-webhook-joker
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - dupImport # https://github.com/go-critic/go-critic/issues/845
+      - ifElseChain
+      - octalLiteral
+      - whyNoLint
+      - wrapperFunc
+  funlen:
+    lines: 100
+    statements: 50
+
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - deadcode
+    - depguard
+    - dogsled
+    - dupl
+    - errcheck
+    - funlen
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofmt
+    - goimports
+    - golint
+    - gomnd
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - interfacer
+    - lll
+    - misspell
+    - nakedret
+    - rowserrcheck
+    - scopelint
+    - staticcheck
+    - structcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - whitespace
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gomnd
+        - funlen
+        - goconst
+    - path: test/
+      linters:
+        - gomnd
+        - funlen
+        - goconst
+    - linters:
+        - lll
+      source: "^//go:generate "
+
+  exclude:
+    # gosec: Duplicated errcheck checks
+    - G104
+    # gosec: Too many false-positives on 'unsafe' usage
+    - G103
+    # gosec: Too many false-positives for parametrized shell calls
+    - G204
+    # gosec: Duplicated errcheck checks
+    - G104
+    # gosec: Too many false-positives with os.Create*
+    - G301
+    # gosec: Too many false-positives with os.OpenFile
+    - G302
+    # gosec: Too many false-positives with file.Chmod
+    - G306
+    # gosec: Duplicated errcheck checks
+    - G307
+    # govet: Common false positives
+    - (possible misuse of unsafe.Pointer|should have signature)
+    # staticcheck: Developers tend to write in C-style with an explicit 'break' in a 'switch', so it's ok to ignore
+    - ineffective break statement. Did you mean to break out of the outer loop
+    # gosec: Too many false-positives for parametrized shell calls
+    - Subprocess launch(ed with variable|ing should be audited)
+    # gosec: Duplicated errcheck checks
+    - (G104|G307)
+    # gosec: Too many issues in popular repos
+    - (Expect directory permissions to be 0750 or less|Expect file permissions to be 0600 or less)
+    # gosec: False positive is triggered by 'src, err := ioutil.ReadFile(filename)'
+    - Potential file inclusion via variable

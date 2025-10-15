@@ -1,0 +1,174 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    name: Final Tests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Run all tests
+      run: |
+        go test -v ./...
+        go vet ./...
+        gofmt -d .
+
+  build-and-release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      contents: write
+      packages: write
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract version
+      id: version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Check if prerelease
+      id: prerelease
+      run: |
+        if [[ "${{ steps.version.outputs.VERSION }}" == *"-"* ]]; then
+          echo "PRERELEASE=true" >> $GITHUB_OUTPUT
+        else
+          echo "PRERELEASE=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Build webhook binary
+      run: |
+        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o webhook-linux-amd64 ./cmd/webhook
+        CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -a -installsuffix cgo -o webhook-linux-arm64 ./cmd/webhook
+        CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -installsuffix cgo -o webhook-darwin-amd64 ./cmd/webhook
+        CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -a -installsuffix cgo -o webhook-darwin-arm64 ./cmd/webhook
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        labels: |
+          org.opencontainers.image.title=cert-manager-webhook-joker
+          org.opencontainers.image.description=cert-manager webhook for Joker.com DNS
+          org.opencontainers.image.url=https://github.com/${{ github.repository }}
+          org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          org.opencontainers.image.version=${{ steps.version.outputs.VERSION }}
+          org.opencontainers.image.created=${{ env.BUILD_DATE }}
+          org.opencontainers.image.revision=${{ github.sha }}
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Generate changelog since last tag
+        LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        if [ -n "$LAST_TAG" ]; then
+          CHANGELOG=$(git log --pretty=format:"* %s (%h)" ${LAST_TAG}..HEAD)
+        else
+          CHANGELOG=$(git log --pretty=format:"* %s (%h)")
+        fi
+        echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGELOG" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.version.outputs.VERSION }}
+        name: Release ${{ steps.version.outputs.VERSION }}
+        body: |
+          ## Changes
+          ${{ steps.changelog.outputs.CHANGELOG }}
+
+          ## Docker Images
+          ```bash
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
+          ```
+
+          ## Installation
+          ```bash
+          kubectl apply -f https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.VERSION }}/webhook.yaml
+          ```
+        prerelease: ${{ steps.prerelease.outputs.PRERELEASE }}
+        files: |
+          webhook-*
+          deploy/*.yaml
+        draft: false
+
+  helm-release:
+    name: Package Helm Chart
+    runs-on: ubuntu-latest
+    needs: build-and-release
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-')
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: '3.12.0'
+
+    - name: Extract version
+      id: version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+    - name: Package Helm chart
+      run: |
+        # Create helm chart (will be added in future)
+        echo "Helm chart packaging will be added when chart is created"
+        # helm package charts/cert-manager-webhook-joker --version ${{ steps.version.outputs.VERSION }}
+
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs: [build-and-release]
+    if: always()
+    steps:
+    - name: Notify on success
+      if: needs.build-and-release.result == 'success'
+      run: |
+        echo "✅ Release ${{ github.ref_name }} published successfully!"
+
+    - name: Notify on failure
+      if: needs.build-and-release.result == 'failure'
+      run: |
+        echo "❌ Release ${{ github.ref_name }} failed!"
+        exit 1

@@ -1,4 +1,4 @@
-.PHONY: build test docker-build docker-push deploy clean lint vet
+.PHONY: build test test-unit test-integration test-conformance docker-build docker-push deploy clean lint vet fmt verify
 
 GO_VERSION := 1.21
 IMAGE_NAME := cert-manager-webhook-joker
@@ -14,6 +14,20 @@ test:
 
 test-unit:
 	go test -v ./internal/...
+
+test-integration:
+	go test -v ./test/integration/...
+
+test-conformance:
+	@if [ -z "$(TEST_ZONE_NAME)" ]; then \
+		echo "TEST_ZONE_NAME must be set for conformance tests"; \
+		echo "Example: export TEST_ZONE_NAME=test.example.com"; \
+		exit 1; \
+	fi
+	@if [ -z "$(TEST_SECRET_NAME)" ]; then \
+		export TEST_SECRET_NAME=joker-credentials; \
+	fi
+	go test -v ./test/conformance/...
 
 lint:
 	golangci-lint run
