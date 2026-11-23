@@ -45,10 +45,8 @@ func (c *client) updateRecord(ctx context.Context, zone, label, recordType, valu
 	data.Set("zone", zone)
 	data.Set("label", label)
 	data.Set("type", recordType)
-	data.Set("verbose", "true")
-
 	if clear {
-		data.Set("clear", "true")
+		data.Set("value", "")
 	} else {
 		data.Set("value", value)
 	}
@@ -76,7 +74,7 @@ func (c *client) updateRecord(ctx context.Context, zone, label, recordType, valu
 	}
 
 	responseText := strings.TrimSpace(string(body))
-	if responseText != "OK" {
+	if !strings.HasPrefix(responseText, "OK") {
 		return fmt.Errorf("unexpected API response: %s", responseText)
 	}
 
